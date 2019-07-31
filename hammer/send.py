@@ -52,7 +52,7 @@ def initialize_fromAddress():
     return myContract
     
 
-def contract_set_via_web3(contract, arg, hashes = None, privateFor=PRIVATE_FOR, gas=GAS_FOR_SET_CALL):
+def contract_set_via_web3(contract, latitude, longitude, direction, speed, acceleration, hashes = None, privateFor=PRIVATE_FOR, gas=GAS_FOR_SET_CALL):
     """
     call the .set(arg) method, possibly with 'privateFor' tx-property
     using the web3 method 
@@ -67,7 +67,7 @@ def contract_set_via_web3(contract, arg, hashes = None, privateFor=PRIVATE_FOR, 
     if PARITY_UNLOCK_EACH_TRANSACTION:
         unlockAccount()
         
-    tx = contract.functions.set( x=arg ).transact(txParameters)
+    tx = contract.functions.updateState( _latitude = latitude, _longitude = longitude, _direction = direction, _speed = speed, _acceleration = acceleration ).transact(txParameters)
     # print ("[sent via web3]", end=" ")  # TODO: not print this here but at start
     print (".", end=" ")  # TODO: not print this here but at start
     tx = w3.toHex(tx)
@@ -77,11 +77,11 @@ def contract_set_via_web3(contract, arg, hashes = None, privateFor=PRIVATE_FOR, 
     return tx
 
 
-def try_contract_set_via_web3(contract, arg=42):
+def try_contract_set_via_web3(contract, latitude, longitude, direction, speed, acceleration):
     """
     test the above
     """
-    tx = contract_set_via_web3(contract, arg=arg)
+    tx = contract_set_via_web3(contract, latitude, longitude, direction, speed, acceleration)
     print (tx)
     tx_receipt = w3.eth.waitForTransactionReceipt(tx)
     storedData = contract.functions.get().call()
@@ -102,7 +102,7 @@ def contract_method_ID(methodname, abi):
     build the 4 byte ID, from abi & methodname
     """
     method_abi = filter_by_name(methodname, abi)
-    assert(len(method_abi)==1)
+    # assert(len(method_abi)==1)
     method_abi = method_abi[0]
     method_signature = abi_to_signature(method_abi) 
     method_signature_hash_bytes = w3.sha3(text=method_signature) 
@@ -147,9 +147,9 @@ def contract_set_via_RPC(contract, arg, hashes = None, privateFor=PRIVATE_FOR, g
     https://github.com/jpmorganchase/quorum/issues/346#issuecomment-382216968
     """
     
-    method_ID = contract_method_ID("set", contract.abi) # TODO: make this "set" flexible for any method name
+    method_ID = contract_method_ID("updateState", contract.abi) # TODO: make this "set" flexible for any method name
     data = argument_encoding(method_ID, arg)
-    txParameters = {'from': w3.eth.defaultAccount, 
+    txParameters = {'from': w3.eth.defaultAccount,
                     'to' : contract.address,
                     'gas' : w3.toHex(gas),
                     'data' : data} 
@@ -212,7 +212,7 @@ def many_transactions_consecutive(contract, numTx):
     txs = []
     for i in range(numTx):
         tx = contract_set(contract, i)
-        print ("set() transaction submitted: ", tx) # Web3.toHex(tx)) # new web3
+        print ("updateState() transaction submitted: ", tx) # Web3.toHex(tx)) # new web3
         txs.append(tx)
     return txs
         
@@ -634,7 +634,7 @@ def sendmany(contract):
     if len(sys.argv)==2 or sys.argv[2]=="sequential":
         
         # blocking, non-async
-        txs=many_transactions_consecutive(contract, numTransactions)  
+        txs=many_transactions_consecutive(contract, numTransactions)
         
     elif sys.argv[2]=="threaded1":
         txs=many_transactions_threaded(contract, numTransactions)

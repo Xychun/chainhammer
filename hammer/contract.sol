@@ -1,23 +1,20 @@
-// simplestorage contract
-// chainhammer v46
-
 pragma solidity ^0.4.21;
 
-contract simplestorage {
-  uint public storedData;
+contract StandardContract {
 
-  function set(uint x) {
-    storedData = x;        // uses ~26691 gas
-    
-    // try failing transactions:
-    // assert ( 1 == 0 );  // uses up all 90000 given gas
-    // revert();           // uses 41686 gas
-    // throw;              // same as revert(); 
-    // require ( 1 == 0 ); // uses 41714 gas
-  }
+    mapping(address => StateVector) public addressToStateVector_;
 
-  function get() constant returns (uint retVal) {
-    return storedData;
+    struct StateVector {
+        int32 latitude; // in DD(Decimal Degrees) - xx.xxxxx between 90 and -90
+        int32 longitude; // in DD(Decimal Degrees) - xx.xxxxx between 180 and -180
+        uint16 direction; // in degrees
+        uint16 speed; // in km/h
+        int8 acceleration; // in m/s^2
+    }
+
+  function updateState(int32 _latitude, int32 _longitude, uint16 _direction, uint16 _speed, int8 _acceleration) public {
+      StateVector memory stateVector = StateVector(_latitude, _longitude, _direction, _speed, _acceleration);
+      addressToStateVector_[msg.sender] = stateVector;
   }
 }
 
